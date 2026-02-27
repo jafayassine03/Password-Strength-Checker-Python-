@@ -1,9 +1,36 @@
 import string
-import random
+import secrets
+import math
+
+
+COMMON_PASSWORDS = {"123456", "password", "qwerty", "admin", "letmein"}
+
+
+def calculate_entropy(password):
+    pool = 0
+
+    if any(c.islower() for c in password):
+        pool += 26
+    if any(c.isupper() for c in password):
+        pool += 26
+    if any(c.isdigit() for c in password):
+        pool += 10
+    if any(c in string.punctuation for c in password):
+        pool += len(string.punctuation)
+
+    if pool == 0:
+        return 0
+
+    entropy = len(password) * math.log2(pool)
+    return round(entropy, 2)
+
 
 def check_password_strength(password):
     score = 0
     feedback = []
+
+    if password.lower() in COMMON_PASSWORDS:
+        return "VERY WEAK", 0, ["This is a very common password!"], 0
 
     has_lower = any(c.islower() for c in password)
     has_upper = any(c.isupper() for c in password)
@@ -35,62 +62,74 @@ def check_password_strength(password):
     else:
         feedback.append("Add symbols")
 
-    if score <= 2:
-        strength = "WEAK "
-    elif score <= 4:
-        strength = "MEDIUM "
+    entropy = calculate_entropy(password)
+
+    score_percent = int((score / 5) * 100)
+
+    if score_percent < 40:
+        strength = "WEAK"
+    elif score_percent < 80:
+        strength = "MEDIUM"
     else:
-        strength = "STRONG "
+        strength = "STRONG"
 
-    return strength, feedback, {
-        "lower": has_lower,
-        "upper": has_upper,
-        "digit": has_digit,
-        "symbol": has_symbol
-    }
+    return strength, score_percent, feedback, entropy
 
 
-def generate_strong_password(base_password, checks):
+def generate_strong_password(length=12):
+    characters = string.ascii_letters + string.digits + string.punctuation
+    return "".join(secrets.choice(characters) for _ in range(length))
+
+
+def improve_password(base_password):
     chars = list(base_password)
 
-    if not checks["lower"]:
-        chars.append(random.choice(string.ascii_lowercase))
-    if not checks["upper"]:
-        chars.append(random.choice(string.ascii_uppercase))
-    if not checks["digit"]:
-        chars.append(random.choice(string.digits))
-    if not checks["symbol"]:
-        chars.append(random.choice(string.punctuation))
+    if not any(c.islower() for c in base_password):
+        chars.append(secrets.choice(string.ascii_lowercase))
+    if not any(c.isupper() for c in base_password):
+        chars.append(secrets.choice(string.ascii_uppercase))
+    if not any(c.isdigit() for c in base_password):
+        chars.append(secrets.choice(string.digits))
+    if not any(c in string.punctuation for c in base_password):
+        chars.append(secrets.choice(string.punctuation))
 
-    while len(chars) < 8:
-        chars.append(random.choice(
+    while len(chars) < 12:
+        chars.append(secrets.choice(
             string.ascii_letters + string.digits + string.punctuation
         ))
 
-    random.shuffle(chars)
+    secrets.SystemRandom().shuffle(chars)
     return "".join(chars)
 
 
 def main():
-    print(" Password Strength Checker\n")
+    print("🔐 Advanced Password Strength Checker\n")
 
-    password = input("Enter a password: ")
-    strength, feedback, checks = check_password_strength(password)
+    while True:
+        password = input("Enter a password (or type 'exit'): ")
 
-    print("\nStrength:", strength)
+        if password.lower() == "exit":
+            print("Goodbye 👋")
+            break
 
-    if feedback:
-        print("\nSuggestions:")
-        for tip in feedback:
-            print("-", tip)
+        strength, score, feedback, entropy = check_password_strength(password)
 
-        print("\n Tip: Let the computer generate a stronger version.")
-        choice = input("Generate strong password? (y/n): ").lower()
+        print(f"\nStrength: {strength}")
+        print(f"Score: {score}/100")
+        print(f"Entropy: {entropy} bits")
 
-        if choice == "y":
-            strong_password = generate_strong_password(password, checks)
-            print("\n Suggested strong password:")
-            print(strong_password)
+        if feedback:
+            print("\nSuggestions:")
+            for tip in feedback:
+                print("-", tip)
+
+            choice = input("\nGenerate improved version? (y/n): ").lower()
+            if choice == "y":
+                improved = improve_password(password)
+                print("\nSuggested improved password:")
+                print(improved)
+
+        print("\n" + "-" * 40 + "\n")
 
 
 if __name__ == "__main__":
