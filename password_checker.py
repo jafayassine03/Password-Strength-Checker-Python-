@@ -141,6 +141,22 @@ class ChatBot:
             print(Fore.MAGENTA + "Bot:", response)
 
 
+class ExtendedChatBot(ChatBot):
+    def __init__(self):
+        super().__init__()
+        self.jokes = [
+            "Why don't programmers like nature? Too many bugs.",
+            "Why did the computer go to the doctor? It caught a virus.",
+            "Why do Java developers wear glasses? Because they don't see sharp.",
+            "Why was the computer cold? It forgot to close Windows."
+        ]
+
+    def handle_command(self, cmd):
+        if cmd == "/joke":
+            return random.choice(self.jokes)
+        return super().handle_command(cmd)
+
+
 if __name__ == "__main__":
-    bot = ChatBot()
+    bot = ExtendedChatBot()
     bot.chat()
